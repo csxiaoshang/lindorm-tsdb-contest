@@ -12,11 +12,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
+public class MultiThreadReadWriteLockTSDBEngineImpl extends TSDBEngine {
     private static final int NUM_FOLDERS = 300;
-    private static volatile ConcurrentMap<Vin, Lock> VIN_LOCKS = new ConcurrentHashMap<>();
+    private static volatile ConcurrentMap<Vin, ReadWriteLock> VIN_LOCKS = new ConcurrentHashMap<>();
     private static volatile ConcurrentMap<Vin, FileOutputStream> OUT_FILES = new ConcurrentHashMap<>();
 
     private boolean connected = false;
@@ -31,7 +33,7 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
      * Our evaluation program will call this constructor.
      * The function's body can be modified.
      */
-    public MultiThreadWriteTSDBEngineImpl(File dataPath) {
+    public MultiThreadReadWriteLockTSDBEngineImpl(File dataPath) {
         super(dataPath);
     }
 
@@ -93,8 +95,8 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
             Vin key = entry.getKey();
             System.out.println("vin" + key);
             FileOutputStream fout = entry.getValue();
-            Lock lock = VIN_LOCKS.get(key);
-            lock.lock();
+            ReadWriteLock lock = VIN_LOCKS.get(key);
+            lock.writeLock().lock();
             System.out.println("getlock" + key);
 
             try {
@@ -102,7 +104,7 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            lock.unlock();
+            lock.writeLock().unlock();
 
         }
         OUT_FILES.clear();
@@ -129,15 +131,15 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
     public void upsert(WriteRequest wReq) throws IOException {
         for (Row row : wReq.getRows()) {
             Vin vin = row.getVin();
-            Lock lock = VIN_LOCKS.computeIfAbsent(vin, key -> new ReentrantLock());
+            ReadWriteLock lock = VIN_LOCKS.computeIfAbsent(vin, key -> new ReentrantReadWriteLock());
 
             try {
                 FileOutputStream fileOutForVin = getFileOutForVin(vin);
                 // 多线程写处理
                 writeExecutorService.submit(() -> {
-                    lock.lock();
+                    lock.writeLock().lock();
                     appendRowToFile(fileOutForVin, row);
-                    lock.unlock();
+                    lock.writeLock().unlock();
                 });
             } catch (Exception e){
                 System.out.println(e.getMessage());
@@ -152,8 +154,8 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
     public ArrayList<Row> executeLatestQuery(LatestQueryRequest pReadReq) throws IOException {
         ArrayList<Row> ans = new ArrayList<>();
         for (Vin vin : pReadReq.getVins()) {
-            Lock lock = VIN_LOCKS.computeIfAbsent(vin, key -> new ReentrantLock());
-            lock.lock();
+            ReadWriteLock lock = VIN_LOCKS.computeIfAbsent(vin, key -> new ReentrantReadWriteLock());
+            lock.readLock().lock();
 
             int rowNums;
             Row latestRow;
@@ -170,7 +172,7 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
                 }
                 fin.close();
             } finally {
-                lock.unlock();
+                lock.readLock().unlock();
             }
 
             if (rowNums != 0) {
@@ -188,8 +190,8 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
     public ArrayList<Row> executeTimeRangeQuery(TimeRangeQueryRequest trReadReq) throws IOException {
         Set<Row> ans = new HashSet<>();
         Vin vin = trReadReq.getVin();
-        Lock lock = VIN_LOCKS.computeIfAbsent(vin, key -> new ReentrantLock());
-        lock.lock();
+        ReadWriteLock lock = VIN_LOCKS.computeIfAbsent(vin, key -> new ReentrantReadWriteLock());
+        lock.readLock().lock();
 
         try {
             FileInputStream fin = getFileInForVin(trReadReq.getVin());
@@ -207,7 +209,7 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
             }
             fin.close();
         } finally {
-            lock.unlock();
+            lock.readLock().unlock();
         }
 
         return new ArrayList<>(ans);

@@ -7,6 +7,7 @@
 
 package com.alibaba.lindorm.contest;
 
+import com.alibaba.lindorm.contest.engine.MultiThreadReadWriteLockTSDBEngineImpl;
 import com.alibaba.lindorm.contest.engine.MultiThreadWriteTSDBEngineImpl;
 import com.alibaba.lindorm.contest.engine.TSDBEngineDemoImpl;
 import com.alibaba.lindorm.contest.structs.ColumnValue;
@@ -49,7 +50,7 @@ public class TSDBEngineImpl extends TSDBEngine {
    */
   public TSDBEngineImpl(File dataPath) {
     super(dataPath);
-    tsdbEngine = new MultiThreadWriteTSDBEngineImpl(dataPath);
+    tsdbEngine = new MultiThreadReadWriteLockTSDBEngineImpl(dataPath);
   }
 
   @Override
