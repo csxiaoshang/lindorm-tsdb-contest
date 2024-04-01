@@ -7,38 +7,12 @@
 
 package com.alibaba.lindorm.contest;
 
-import com.alibaba.lindorm.contest.engine.MultiThreadReadWriteLockTSDBEngineImpl;
-import com.alibaba.lindorm.contest.engine.MultiThreadWriteTSDBEngineImpl;
-import com.alibaba.lindorm.contest.engine.TSDBEngineDemoImpl;
-import com.alibaba.lindorm.contest.structs.ColumnValue;
-import com.alibaba.lindorm.contest.structs.LatestQueryRequest;
-import com.alibaba.lindorm.contest.structs.Row;
-import com.alibaba.lindorm.contest.structs.Schema;
-import com.alibaba.lindorm.contest.structs.TimeRangeQueryRequest;
-import com.alibaba.lindorm.contest.structs.Vin;
-import com.alibaba.lindorm.contest.structs.WriteRequest;
+import com.alibaba.lindorm.contest.engine.NioTSDBEngineImpl;
+import com.alibaba.lindorm.contest.structs.*;
 
-import javax.print.attribute.standard.Finishings;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class TSDBEngineImpl extends TSDBEngine {
 
@@ -50,7 +24,7 @@ public class TSDBEngineImpl extends TSDBEngine {
    */
   public TSDBEngineImpl(File dataPath) {
     super(dataPath);
-    tsdbEngine = new MultiThreadReadWriteLockTSDBEngineImpl(dataPath);
+    tsdbEngine = new NioTSDBEngineImpl(dataPath);
   }
 
   @Override

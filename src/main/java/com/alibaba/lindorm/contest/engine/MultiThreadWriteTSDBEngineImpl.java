@@ -91,11 +91,9 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
         // Close all resources, assuming all writing and reading process has finished.
         for (Map.Entry<Vin, FileOutputStream> entry : OUT_FILES.entrySet()){
             Vin key = entry.getKey();
-            System.out.println("vin" + key);
             FileOutputStream fout = entry.getValue();
             Lock lock = VIN_LOCKS.get(key);
             lock.lock();
-            System.out.println("getlock" + key);
 
             try {
                 fout.close();
@@ -136,8 +134,11 @@ public class MultiThreadWriteTSDBEngineImpl extends TSDBEngine {
                 // 多线程写处理
                 writeExecutorService.submit(() -> {
                     lock.lock();
-                    appendRowToFile(fileOutForVin, row);
-                    lock.unlock();
+                    try {
+                        appendRowToFile(fileOutForVin, row);
+                    } finally {
+                        lock.unlock();
+                    }
                 });
             } catch (Exception e){
                 System.out.println(e.getMessage());

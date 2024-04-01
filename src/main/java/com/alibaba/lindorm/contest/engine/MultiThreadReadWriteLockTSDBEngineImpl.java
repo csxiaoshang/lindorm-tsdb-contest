@@ -11,9 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MultiThreadReadWriteLockTSDBEngineImpl extends TSDBEngine {
@@ -97,7 +95,6 @@ public class MultiThreadReadWriteLockTSDBEngineImpl extends TSDBEngine {
             FileOutputStream fout = entry.getValue();
             ReadWriteLock lock = VIN_LOCKS.get(key);
             lock.writeLock().lock();
-            System.out.println("getlock" + key);
 
             try {
                 fout.close();
@@ -134,12 +131,15 @@ public class MultiThreadReadWriteLockTSDBEngineImpl extends TSDBEngine {
             ReadWriteLock lock = VIN_LOCKS.computeIfAbsent(vin, key -> new ReentrantReadWriteLock());
 
             try {
-                FileOutputStream fileOutForVin = getFileOutForVin(vin);
                 // 多线程写处理
                 writeExecutorService.submit(() -> {
                     lock.writeLock().lock();
-                    appendRowToFile(fileOutForVin, row);
-                    lock.writeLock().unlock();
+                    try {
+                        FileOutputStream fileOutForVin = getFileOutForVin(vin);
+                        appendRowToFile(fileOutForVin, row);
+                    } finally {
+                        lock.writeLock().unlock();
+                    }
                 });
             } catch (Exception e){
                 System.out.println(e.getMessage());

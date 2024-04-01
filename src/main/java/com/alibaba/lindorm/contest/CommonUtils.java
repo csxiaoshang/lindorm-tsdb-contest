@@ -84,6 +84,22 @@ public class CommonUtils {
         return ByteBuffer.wrap(b);
     }
 
+    public static ByteBuffer readString(ByteBuffer byteBuffer) throws IOException {
+        int strLen = byteBuffer.getInt();
+        if (strLen == 0) {
+            ByteBuffer res = ByteBuffer.allocate(0);
+            res.flip();
+            return res;
+        }
+        byte[] b = new byte[strLen];
+        byteBuffer.get(b, 0, strLen);
+        ByteBuffer ret = ByteBuffer.wrap(b);
+        if (ret.remaining() != strLen) {
+            throw new EOFException();
+        }
+        return ByteBuffer.wrap(b);
+    }
+
     public static boolean cleanDir(File dir, boolean deleteDirItself) {
         if (dir.isDirectory()) {
             String[] children = dir.list();
