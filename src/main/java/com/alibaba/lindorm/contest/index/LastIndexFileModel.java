@@ -110,6 +110,7 @@ public class LastIndexFileModel {
                     Row row = readRowFromByteBuffer(ByteBuffer.wrap(rowBytes));
                     lastIndexRowMap.put(row.getVin(), row);
 
+                    // read next row
                     if(lastIndexButeBuffer.remaining() >= 4){
                         rowSize = lastIndexButeBuffer.getInt();
                     } else{

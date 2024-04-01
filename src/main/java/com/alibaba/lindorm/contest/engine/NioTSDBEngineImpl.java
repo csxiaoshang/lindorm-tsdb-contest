@@ -98,6 +98,7 @@ public class NioTSDBEngineImpl extends TSDBEngine {
             return;
         }
 
+        // persist last index
         initLastIndexed.set(false);
         lastIndexFileModel.flushLastIndexRowMap();
 
@@ -112,6 +113,7 @@ public class NioTSDBEngineImpl extends TSDBEngine {
         OUT_FILES.clear();
         VIN_LOCKS.clear();
 
+        // persist the schema
         try {
             File schemaFile = new File(getDataPath(), "schema.txt");
             schemaFile.delete();
